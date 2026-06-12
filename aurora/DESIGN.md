@@ -1,6 +1,6 @@
 # Dashboard design knowledge (taste-skill, distilled)
 
-This is the design system behind the `dashboard_notion` hero poster. It is the
+This is the design system behind the `aurora` hero poster. It is the
 *reusable* part — the reason the output looks deliberate instead of "AI-default".
 Hand this file to any LLM (local or hosted) and it can reproduce the look.
 
@@ -55,3 +55,21 @@ Notion native channel and render everything from `STATE` into one self-hosted HT
 page (the block builders map 1:1 to HTML/CSS: callout→div, column_list→flex,
 mermaid→Mermaid.js, toggle→`<details>`, table→`<table>`). That is the documented
 "next step" for full design unification.
+
+## Content style (mixed language)
+
+When the audience is Japanese: **short labels / technical terms stay in English**
+(card titles, flow node names, status tags, milestone themes — e.g. `Features`,
+`Tests`, `API v2`, `Plan → GA`), but **explanatory prose is written in Japanese**
+(the overall summary, to-do detail after the `—`, issue descriptions, settings).
+This keeps scannable labels compact and universal while sentences read naturally.
+
+Icons in the flow chart are just emoji inside the Mermaid node label
+(`A["🔨 Build"]`) — the LLM adds one character, the renderer draws it. No SVG,
+no extra tokens. The same applies to cards/issues, which already lead with an emoji.
+
+Clickable node explanations (local render): add a `flow_notes` map to STATE keyed by
+the Mermaid node id (`{"A": "…説明…"}`). `render_local.py` wires each node's click to
+an **inline detail panel under the flow** (`#flowDetail`) — NOT a modal. Modals block
+the screen and force a close action; prefer non-modal inline/drawer/tooltip reveals.
+The LLM only writes short note text per node; interactivity is the renderer's job.

@@ -2,6 +2,8 @@
 notion.env
 # generated artifacts
 scripts/dashboard.png
+scripts/dashboard_local.html
+scripts/_local_preview.png
 dashboard_state.json
 __pycache__/
 *.pyc

@@ -2,7 +2,7 @@
 """
 notion_sync.py — Render a graphical project dashboard and mirror it into a Notion page.
 
-PART OF THE `dashboard_notion` ADDON. Vendor- and project-agnostic.
+PART OF THE `aurora` ADDON. Vendor- and project-agnostic.
 
 Design principles:
   - Zero dependencies (Python standard library / urllib only). Runs anywhere
