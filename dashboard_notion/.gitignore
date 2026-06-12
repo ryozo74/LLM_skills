@@ -1,0 +1,7 @@
+# secrets — never commit the real token
+notion.env
+# generated artifacts
+scripts/dashboard.png
+dashboard_state.json
+__pycache__/
+*.pyc

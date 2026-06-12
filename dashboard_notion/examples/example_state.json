@@ -1,0 +1,50 @@
+{
+  "title_banner": ["🎯 Aurora — Web App / Build phase", "blue_background"],
+  "overall": ["🟢 On track", "Core build is complete; hardening and beta prep underway. No blockers on the critical path.", "green_background"],
+  "progress_pct": 72,
+  "hero_caption": "Aurora project dashboard (auto-generated)",
+  "cards_heading": "📌 Status at a glance",
+  "cards": [
+    ["🟢", "Features", "24 done\nv1 scope", "green_background"],
+    ["✅", "Tests", "142 / 0\nGREEN", "green_background"],
+    ["🟡", "In progress", "API v2\nmigration", "yellow_background"],
+    ["⏸️", "Staging", "paused\n(infra window)", "orange_background"]
+  ],
+  "flow_heading": "🗺️ Project flow",
+  "flow": "flowchart TD\n  A[\"Plan\"]:::done --> B[\"Design\"]:::done\n  B --> C[\"Build\"]:::done --> D[\"Hardening\"]:::done\n  D --> E[\"Test\"]:::done --> F[\"Beta\"]:::wip\n  F --> G[\"GA launch<br/>scheduled\"]:::wait\n  classDef done fill:#a7f3d0,stroke:#059669,color:#064e3b;\n  classDef wip fill:#fde68a,stroke:#f59e0b,color:#78350f;\n  classDef wait fill:#fecdd3,stroke:#e11d48,color:#881337;",
+  "todos_heading": "📝 Work list",
+  "todos": [
+    ["**API v2 migration** — finish endpoint cutover", false],
+    ["Beta onboarding emails", false],
+    ["Fix 500 fallback on unknown id", false],
+    ["Form cleanup (minor, no behavior change)", false]
+  ],
+  "issues_heading": "🚨 Issues / blockers",
+  "issues": [
+    ["🔴", "**Infra maintenance window** — staging paused until the ops window closes (external)", "red_background"],
+    ["🟡", "**Manual QA** — 3 flows to confirm before beta (signup / billing / export)", "yellow_background"],
+    ["🟡", "**Stubbed integrations** — 4 partner endpoints still mocked, re-wire after delivery", "yellow_background"],
+    ["⚪", "**Docs gap** — onboarding guide not written yet (no functional impact)", "gray_background"]
+  ],
+  "milestones_heading": "✅ Milestones",
+  "milestones": [
+    ["Range", "Theme", "Summary"],
+    ["v0.1", "Prototype", "first working slice / core model"],
+    ["v0.3", "Design system", "UI kit / shared components"],
+    ["v0.6", "Build", "feature set complete / CI green"],
+    ["v0.9", "Hardening", "auth / perf / audit fixes"],
+    ["v1.0", "GA", "production cutover / launch"]
+  ],
+  "settings_heading": "⚙️ Settings",
+  "settings": [
+    "**Release cadence**: weekly to staging, biweekly to production.",
+    "**Read endpoints**: pass-through, no hidden cache layer.",
+    "**Asset upload**: 500MB cap (client + server check)."
+  ],
+  "refs_heading": "📁 References",
+  "refs": [
+    "Repo: `README.md`",
+    "Runbook: `docs/RUNBOOK.md`",
+    "Architecture notes: `docs/architecture.md`"
+  ]
+}
