@@ -1,41 +1,41 @@
 {
-  "title_banner": ["🎯 Aurora — Web アプリ / ビルドフェーズ", "blue_background"],
-  "overall": ["🟢 On track", "コア機能のビルドは完了。現在ハードニングとベータ準備を進行中。クリティカルパス上のブロッカーは無し。", "green_background"],
-  "progress_pct": 72,
-  "hero_caption": "Aurora プロジェクト ダッシュボード（自動生成）",
+  "title_banner": ["🎯 Acme Content Studio — Production pipeline", "blue_background"],
+  "overall": ["🟢 On track", "コアの制作工程は順調に進行中。下書きとデザインは完了、レビューを実施しながら公開準備に入っている。クリティカルパス上のブロッカーは無し。", "green_background"],
+  "progress_pct": 68,
+  "hero_caption": "Acme Content Studio ダッシュボード（サンプル）",
 
   "highlights_heading": "⭐ ハイライト",
   "highlights": [
-    ["📈", "Active users", "12,480", "▲ 18%"],
-    ["💰", "MRR", "¥3.2M", "▲ 9%"],
-    ["⚡", "p95 latency", "180ms", "▼ 12%"],
-    ["⭐", "NPS", "62", "▲ 4"]
+    ["📈", "Active readers", "12,480", "▲ 18%"],
+    ["💰", "MRR", "$32K", "▲ 9%"],
+    ["⚡", "Avg. publish time", "4.2h", "▼ 12%"],
+    ["⭐", "CSAT", "62", "▲ 4"]
   ],
 
   "insights_heading": "💡 Insights",
   "insights": [
-    ["🚀", "ベータ離脱は**オンボーディング2画面目**に集中。導線を短縮すれば完了率は +15% 見込み。", "blue_background"],
-    ["⚠️", "p95 は改善傾向だが、**エラーレート 0.4%** が SLO 0.3% を超過。次スプリントで優先対応を推奨。", "yellow_background"],
-    ["📈", "W7→W8 で **+17% 成長**。GA 前の負荷試験を前倒しするのが安全。", "green_background"]
+    ["🚀", "離脱は**レビュー差し戻し**に集中。チェックリストを事前共有すれば手戻りは -15% 見込み。", "blue_background"],
+    ["⚠️", "公開後の修正率 **0.4%** が目標 0.3% を超過。次サイクルで校正工程を強化推奨。", "yellow_background"],
+    ["📈", "W7→W8 で **+17% 成長**。公開キャパシティの前倒し確保が安全。", "green_background"]
   ],
 
   "cards_heading": "📌 ステータス概況",
   "cards": [
-    ["🟢", "Features", "24件 完了\nv1 範囲", "green_background"],
-    ["✅", "Tests", "142 / 0\nGREEN", "green_background"],
-    ["🟡", "In progress", "API v2\n移行中", "yellow_background"],
-    ["⏸️", "Staging", "停止中\n(インフラ作業)", "orange_background"]
+    ["🟢", "Articles", "24件 完了\nQ3 範囲", "green_background"],
+    ["✅", "Reviews", "142 / 0\nCLEARED", "green_background"],
+    ["🟡", "In progress", "Visuals\n制作中", "yellow_background"],
+    ["⏸️", "Distribution", "保留\n(枠調整)", "orange_background"]
   ],
 
   "bars_heading": "📊 品質指標",
   "bars": [
-    ["テストカバレッジ", 88, 100, "green_background"],
-    ["パフォーマンス予算", 72, 100, "blue_background"],
+    ["校正カバレッジ", 88, 100, "green_background"],
+    ["スケジュール遵守", 72, 100, "blue_background"],
     ["アクセシビリティ (a11y)", 64, 100, "yellow_background"],
-    ["バンドルサイズ削減", 41, 100, "orange_background"]
+    ["画像最適化", 41, 100, "orange_background"]
   ],
 
-  "trend_heading": "📈 週次アクティブユーザー (8週)",
+  "trend_heading": "📈 週次アクティブ読者 (8週)",
   "trend": {
     "points": [12, 18, 16, 24, 30, 28, 36, 42],
     "labels": ["W1", "W2", "W3", "W4", "W5", "W6", "W7", "W8"]
@@ -43,61 +43,151 @@
 
   "meters_heading": "🎚️ リソース使用状況",
   "meters": [
-    ["CPU 使用率", 42, 0, 100, "%"],
-    ["メモリ", 7.2, 0, 16, "GB"],
-    ["ストレージ", 320, 0, 512, "GB"],
-    ["エラーレート", 0.4, 0, 5, "%"]
+    ["編集者キャパシティ", 42, 0, 100, "%"],
+    ["ストレージ", 7.2, 0, 16, "GB"],
+    ["公開枠", 320, 0, 512, "枠"],
+    ["修正率", 0.4, 0, 5, "%"]
   ],
 
-  "flow_heading": "🗺️ プロジェクトフロー",
-  "flow": "flowchart LR\n  A[\"📋 Plan\"]:::done --> B[\"🎨 Design\"]:::done\n  B --> C[\"🔨 Build\"]:::done --> D[\"🛡️ Hardening\"]:::done\n  D --> E[\"🧪 Test\"]:::done --> F[\"🚀 Beta\"]:::wip\n  F --> G[\"🏁 GA launch\"]:::wait\n  classDef done fill:#a7f3d0,stroke:#059669,color:#064e3b;\n  classDef wip fill:#fde68a,stroke:#f59e0b,color:#78350f;\n  classDef wait fill:#fecdd3,stroke:#e11d48,color:#881337;",
+  "flow_heading": "🗺️ 制作フロー",
+  "flow": "flowchart LR\n  P1[\"📋 Brief\"]:::done --> P2[\"✍ Draft\"]:::done\n  P2 --> P3[\"🎨 Design\"]:::done --> P4[\"🔎 Review\"]:::wip\n  P4 --> P5[\"🚀 Publish\"]:::wait --> P6[\"📣 Promote\"]:::new\n  classDef done fill:#a7f3d0,stroke:#059669,color:#064e3b;\n  classDef wip fill:#fde68a,stroke:#f59e0b,color:#78350f;\n  classDef wait fill:#fecdd3,stroke:#e11d48,color:#881337;\n  classDef new fill:#c7d2fe,stroke:#4f46e5,color:#312e81;",
   "flow_notes": {
-    "A": "要件定義とスコープ確定。コアデータモデルを設計した段階。",
-    "B": "UI/UX デザインと共通コンポーネントを整備。デザインシステムを確立した。",
-    "C": "v1 スコープの主要機能を実装。機能セットを構築した。",
-    "D": "認証・性能・監査対応など、本番品質への引き上げを実施。",
-    "E": "QA フェーズ。signup / billing / export の主要フローを検証する。",
-    "F": "限定ユーザーへのベータ公開。オンボーディング導線を検証中。",
-    "G": "一般提供（GA）。本番切替とローンチを予定している。"
+    "P1": "依頼の受領と要件確定。読者像・目的・成果指標を整理し、制作の前提を固める段階。",
+    "P2": "下書きの執筆。構成案に沿って本文を書き起こし、初稿を仕上げた。",
+    "P3": "ビジュアル制作。図版・サムネイル・レイアウトを整え、トーンを統一する。",
+    "P4": "レビュー工程。事実確認・校正・ブランド適合をチェックリストで検証している。",
+    "P5": "公開。CMS への入稿と公開設定を行う予定。",
+    "P6": "拡散。SNS・ニュースレターでの告知を新規に計画している。"
   },
+
+  "flow_cards_heading": "🗺️ パイプライン詳細 (Flow Cards)",
+  "flow_cards_layout": "vertical",
+  "flow_cards": [
+    {
+      "step": "P1",
+      "icon": "📋",
+      "title": "Brief",
+      "state": "done",
+      "roles": ["Editor", "Client"],
+      "desc": "依頼の受領と要件確定。読者像・目的・成果指標を一枚に整理し、後工程の前提を固める。**目的を一文で言えること**を完了条件にしている。",
+      "sample": {
+        "type": "text",
+        "label": "P1 出力例: ブリーフ要約",
+        "body": "ターゲット: 中小企業のマーケ担当\n目的: 製品Aの導入事例を紹介し問い合わせを獲得\n成果指標: CTR 3% 以上 / 問い合わせ 20件"
+      }
+    },
+    {
+      "step": "P2",
+      "icon": "✍",
+      "title": "Draft",
+      "state": "done",
+      "roles": ["Writer"],
+      "desc": "構成案に沿って初稿を執筆。見出し構造と一次情報の引用を整える。",
+      "sample": {
+        "type": "text",
+        "label": "P2 出力例: 冒頭リード文",
+        "body": "導入の手間を 8 時間から 30 分へ。製品Aを採用した A 社の現場で、何がどう変わったのかを担当者の声とともに追った。"
+      }
+    },
+    {
+      "step": "P3",
+      "icon": "🎨",
+      "title": "Design",
+      "state": "done",
+      "roles": ["Designer"],
+      "desc": "図版・サムネイル・レイアウトを制作。画像サンプルは `path` 形式で指定し、レンダラが build 時に base64 化して埋め込むため HTML は完全自己完結。",
+      "sample": {
+        "type": "image",
+        "label": "P3 出力例: サムネイル案 (illustrative placeholder)",
+        "path": "assets/demo_placeholder.png",
+        "alt": "サムネイルのプレースホルダ画像"
+      }
+    },
+    {
+      "step": "P4",
+      "icon": "🔎",
+      "title": "Review",
+      "state": "wip",
+      "roles": ["Editor", "QA"],
+      "desc": "事実確認・校正・ブランド適合をチェックリストで検証中。複数の検証ショットを `images` 形式で並べて確認する。",
+      "sample": {
+        "type": "images",
+        "label": "P4 出力例: レビュー差分ショット (illustrative placeholders)",
+        "paths": ["assets/demo_placeholder.png", "assets/demo_placeholder.png", "assets/demo_placeholder.png"]
+      }
+    },
+    {
+      "step": "P5",
+      "icon": "🚀",
+      "title": "Publish",
+      "state": "wait",
+      "roles": ["Editor"],
+      "desc": "CMS への入稿と公開設定。動画サンプルは `videos` 形式で相対パス参照（大容量のため base64 埋込せず `<video>` で配信）。下記パスは説明用のダミーで、実ファイルは同梱していない。",
+      "sample": {
+        "type": "videos",
+        "label": "P5 出力例: 公開プレビュー動画 (illustrative — file not bundled)",
+        "paths": ["assets/preview_demo.mp4"],
+        "posters": ["assets/demo_placeholder.png"]
+      }
+    },
+    {
+      "step": "P6",
+      "icon": "📣",
+      "title": "Promote",
+      "state": "new",
+      "roles": ["Marketing"],
+      "desc": "SNS・ニュースレターでの告知を新規に計画。配信チャネルと投稿スケジュールを確定させる。"
+    }
+  ],
+
+  "flow_cards2_heading": "🧭 フロー俯瞰 (Overview)",
+  "flow_cards2_layout": "horizontal",
+  "flow_cards2": [
+    {"step": "P1", "icon": "📋", "title": "Brief", "state": "done", "roles": ["Editor"], "desc": "要件確定。目的と成果指標を一枚に。"},
+    {"step": "P2", "icon": "✍", "title": "Draft", "state": "done", "roles": ["Writer"], "desc": "初稿執筆。構成と引用を整える。"},
+    {"step": "P3", "icon": "🎨", "title": "Design", "state": "done", "roles": ["Designer"], "desc": "図版・サムネイル・レイアウト制作。"},
+    {"step": "P4", "icon": "🔎", "title": "Review", "state": "wip", "roles": ["QA"], "desc": "校正・事実確認・ブランド適合チェック。"},
+    {"step": "P5", "icon": "🚀", "title": "Publish", "state": "wait", "roles": ["Editor"], "desc": "CMS 入稿と公開設定。"},
+    {"step": "P6", "icon": "📣", "title": "Promote", "state": "new", "roles": ["Marketing"], "desc": "SNS・ニュースレター告知の計画。"}
+  ],
 
   "todos_heading": "📝 作業リスト",
   "todos": [
-    ["**API v2 migration** — エンドポイント切替を完了させる", false],
-    ["**Beta onboarding** — オンボーディングメールを作成・送信する", false],
-    ["**500 fallback** — 不明な id の際の 500 応答を修正する", false],
-    ["**Form cleanup** — フォーム整理（軽微・挙動変更なし）", true]
+    ["**Review pass** — レビュー指摘の反映を完了させる", false],
+    ["**Newsletter** — 告知メールを作成・送信する", false],
+    ["**Alt text** — 画像の代替テキストを補完する", false],
+    ["**Style cleanup** — 表記揺れ整理（軽微・内容変更なし）", true]
   ],
 
   "issues_heading": "🚨 課題 / ブロッカー",
   "issues": [
-    ["🔴", "**Infra maintenance** — 運用作業枠が閉じるまで staging を停止（外部要因）", "red_background"],
-    ["🟡", "**Manual QA** — ベータ前に 3 フローを確認する（signup / billing / export）", "yellow_background"],
-    ["🟡", "**Stubbed integrations** — 連携先 4 エンドポイントが未実装スタブのまま。納品後に再配線する", "yellow_background"],
-    ["⚪", "**Docs gap** — オンボーディングガイドが未執筆（機能への影響なし）", "gray_background"]
+    ["🔴", "**Slot conflict** — 配信枠が他案件と競合（外部要因・調整中）", "red_background"],
+    ["🟡", "**Manual QA** — 公開前に 3 項目を確認する（リンク / 画像 / メタ情報）", "yellow_background"],
+    ["🟡", "**Pending assets** — 図版 2 点が未提出のままプレースホルダ", "yellow_background"],
+    ["⚪", "**Docs gap** — 制作ガイドが未更新（成果物への影響なし）", "gray_background"]
   ],
 
   "milestones_heading": "✅ マイルストン",
   "milestones": [
     ["区間", "テーマ", "概要"],
-    ["v0.1", "Prototype", "最初の動作スライス / コアモデルを確立"],
-    ["v0.3", "Design system", "UI キット / 共通コンポーネントを整備"],
-    ["v0.6", "Build", "機能セット完成 / CI グリーン"],
-    ["v0.9", "Hardening", "認証 / 性能 / 監査対応を実施"],
-    ["v1.0", "GA", "本番切替 / ローンチ"]
+    ["v0.1", "Brief", "要件確定 / 成果指標を設定"],
+    ["v0.3", "Draft", "初稿完成 / 一次情報を確保"],
+    ["v0.6", "Design", "ビジュアル一式を整備"],
+    ["v0.9", "Review", "校正・事実確認を完了"],
+    ["v1.0", "Publish", "公開 / 告知開始"]
   ],
 
   "settings_heading": "⚙️ 設定",
   "settings": [
-    "**リリース頻度**: staging は週次、production は隔週でリリースする。",
-    "**読み取り EP**: pass-through を維持し、隠れたキャッシュ層は設けない。",
-    "**アセットアップロード**: 500MB 上限（client + server の二重チェック）。"
+    "**公開頻度**: 下書きは週次、公開は隔週で行う。",
+    "**画像方針**: サムネイルは path 形式で base64 埋込、動画は相対参照で配信。",
+    "**アセット上限**: 1 ファイル 500MB（client + server の二重チェック）。"
   ],
 
   "refs_heading": "📁 参照",
   "refs": [
-    "リポジトリ: `README.md`",
-    "Runbook: `docs/RUNBOOK.md`",
-    "アーキテクチャ覚書: `docs/architecture.md`"
+    "デザインルール: `DESIGN.md`",
+    "デザイン知識: `design_dataset.md`",
+    "STATE スキーマ: `README.md`"
   ]
 }

@@ -1,0 +1,92 @@
+{
+  "title_banner": ["🗺️ Aurora — Flow Cards horizontal layout demo", "blue_background"],
+  "overall": ["✅ Demo", "横レイアウト (horizontal) の flow_cards デモ。auto-fit グリッドで複数カードをタイル状に表示。画面幅に応じて列数が自動調整される。", "green_background"],
+  "progress_pct": 100,
+  "hero_caption": "Aurora — Flow Cards Horizontal Demo",
+
+  "flow_cards_heading": "⬛ パイプライン概要 (horizontal)",
+  "flow_cards_layout": "horizontal",
+  "flow_cards": [
+    {
+      "step": "P1",
+      "icon": "✍",
+      "title": "Story",
+      "state": "done",
+      "roles": ["LLM", "PM"],
+      "desc": "お題から world/人物/plot/感情曲線を協議し story.yaml 化。"
+    },
+    {
+      "step": "P2",
+      "icon": "🎬",
+      "title": "Storyboard",
+      "state": "done",
+      "roles": ["Dir", "DP"],
+      "desc": "story から各シーンをショットへ分割し構図/カメラを付与。storyboard.yaml 化。"
+    },
+    {
+      "step": "P3",
+      "icon": "👤",
+      "title": "Character ★NEW",
+      "state": "done",
+      "roles": ["Art", "Chr"],
+      "desc": "キャラクター外観・性格・一貫性プロファイルを確定し character.yaml 化。"
+    },
+    {
+      "step": "P4",
+      "icon": "💬",
+      "title": "Dialogue",
+      "state": "wip",
+      "roles": ["Writer"],
+      "desc": "各ショットの尺付きセリフ/ナレーションを生成し dialogue.yaml 化。"
+    },
+    {
+      "step": "P5",
+      "icon": "🖼",
+      "title": "Keyframe",
+      "state": "wip",
+      "roles": ["Art", "DP"],
+      "desc": "storyboard からキーフレーム生成 (ComfyUI + IP-Adapter + LoRA)。"
+    },
+    {
+      "step": "P6",
+      "icon": "🎤",
+      "title": "TTS ★",
+      "state": "wait",
+      "roles": ["Sound"],
+      "desc": "セリフを TTS で音声化 (感情/間)。新規技術 ★最難所。"
+    },
+    {
+      "step": "P7",
+      "icon": "⭐",
+      "title": "Video ★",
+      "state": "wait",
+      "roles": ["Dir", "Sound"],
+      "desc": "keyframes + motion vector + 音声駆動リップシンクで動画生成。新規技術 ★最難所。"
+    },
+    {
+      "step": "P8",
+      "icon": "🎵",
+      "title": "Mix & mov",
+      "state": "wait",
+      "roles": ["Sound", "SUP"],
+      "desc": "BGM/SE 付与 + 最終ミックスで mov 組立。"
+    },
+    {
+      "step": "P9",
+      "icon": "📦",
+      "title": "Archive",
+      "state": "wait",
+      "roles": ["SUP"],
+      "desc": "manifest + assets 保存・完全ロールバック可能なアーカイブ。"
+    }
+  ],
+
+  "todos": [
+    ["横レイアウトでは sample サムネ (max-height 縮小) と text の行数 clamp を確認", false],
+    ["@media(max-width:760px) で 1列縮退することをブラウザで確認", false]
+  ],
+
+  "refs": [
+    "縦レイアウト例: `examples/example_state.json`"
+  ]
+}

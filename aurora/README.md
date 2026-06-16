@@ -42,9 +42,20 @@ Each section renders only if its `STATE` key is present:
 | `bars` | horizontal bar chart |
 | `trend` | SVG line chart |
 | `meters` | sliders / gauges |
-| `flow` + `flow_notes` | styled stage **pipeline**; click a node → inline detail panel |
+| `flow` + `flow_notes` | styled stage **pipeline** (top icon strip); hover a node → its note fills the **sticky** `#flowDetail` panel + the node gets a persistent "current" marker; click → scrolls to the matching detail card |
+| `flow_cards` + `flow_cards_layout` | **flow summary cards** — vertical DETAIL: phase-by-phase cards with text/image/images/videos samples; layout `"vertical"` (default, timeline) or `"horizontal"` (wrap grid) |
+| `flow_cards2` (+`flow_cards2_layout`) | **flow overview** — horizontal OVERVIEW companion to `flow_cards` (compact, sampleless) |
 | `todos` / `issues` | work list / colored issue callouts |
 | `milestones` / `settings` / `refs` | cards + collapsibles |
+
+> **Flow / pipeline chart — standard pattern.** To present any multi-step process, use the
+> four cooperating keys together — `flow` (top icon strip) + `flow_notes` (sticky hover
+> panel) + `flow_cards` (vertical detail cards) + `flow_cards2` (horizontal overview). Each
+> card's `step` must equal its `flow` node id (`P1…`) so they share a scroll anchor: hover a
+> strip icon → its note sticks in the panel and the icon gets a persistent "current" marker;
+> click → scrolls to that detail card. Full schema + interaction contract + information order
+> live in **`DESIGN.md` → "Flow / pipeline chart (standard pattern)"**;
+> `examples/example_state.json` is a runnable generic demo.
 
 ## Quick start
 
@@ -93,6 +104,30 @@ Read `DESIGN.md` + `design_dataset.md` first — they hold the rules that keep i
   "meters":     [["CPU", 42, 0, 100, "%"], ...],                        // value, min, max, unit
   "flow":       "flowchart LR\n A[\"📋 Plan\"]:::done --> B[\"🚀 Beta\"]:::wip ...",
   "flow_notes": {"A":"…click-to-show explanation…", "B":"…"},
+  // flow_cards: フェーズ要約カード (standard component)
+  // layout: "vertical"(default, タイムライン) | "horizontal"(wrap グリッド)
+  "flow_cards_heading": "🗺️ Pipeline",
+  "flow_cards_layout": "vertical",
+  "flow_cards": [
+    {
+      "step": "P1",           // mono 表示される工程 ID (任意)
+      "icon": "✍",            // 絵文字 1 字 (任意)
+      "title": "Story",       // 必須相当
+      "state": "done",        // "done"|"wip"|"wait" (任意・既定 "done")
+      "roles": ["Writer"],    // 役職タグ (任意)
+      "desc": "説明テキスト (Markdown **bold** 対応)",
+      "sample": {             // (任意) フェーズの実例
+        // text 形式:
+        "type": "text", "label": "出力例ラベル", "body": "本文テキスト"
+        // image 形式 (path 推奨 — STATE ファイルのディレクトリ基準で base64 埋込):
+        // "type": "image", "label": "画像ラベル", "path": "assets/sample.jpg", "alt": "alt text"
+        // または inline data-URI:
+        // "type": "image", "label": "...", "src": "data:image/png;base64,..."
+      }
+    }
+  ],
+  // 移植性メモ: 画像は path 形式推奨(STATE 基準でレンダラが build 時 base64 化)。
+  // skill example は docs/ 画像を参照せず examples/assets/ に同梱のこと。
   "todos":      [["**task** — detail", false], ...],
   "issues":     [["🔴","**title** — detail","red_background"], ...],
   "milestones": [["col","headers",".."], ["v0.1","Theme","summary"], ...],

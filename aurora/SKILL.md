@@ -34,8 +34,21 @@ while the renderer (the "下地") owns all markup, styling, charts, and interact
 ## Components (render from STATE; each section appears only if its key is present)
 banner · overall · KPI ring (`progress_pct`) · `highlights` · `insights` (AI) · `cards` ·
 `bars` (bar chart) · `trend` (SVG line) · `meters` (sliders) · `flow`+`flow_notes`
-(styled pipeline, click a node → inline detail panel) · `todos` · `issues` · `milestones` ·
-`settings` · `refs`.
+(styled pipeline, click a node → inline detail panel) · `flow_cards`(+`flow_cards_layout`)
+= フェーズ要約カード。縦/横レイアウト・各フェーズに text/画像サンプル内包 · `flow_cards2`
+= 横並び俯瞰カード · `todos` · `issues` · `milestones` · `settings` · `refs`.
+
+### Flow / pipeline chart — standard pattern (read `DESIGN.md` before authoring)
+To present any multi-step process, use the four cooperating keys together:
+`flow` (top icon strip) + `flow_notes` (sticky hover panel, keyed by node id `P1…`) +
+`flow_cards` (vertical DETAIL cards, one sample each) + `flow_cards2` (horizontal OVERVIEW).
+Card `step` MUST equal the matching `flow` node id so the strip and cards share the same
+scroll anchor. Interaction: hover a strip icon → its note fills `#flowDetail` and **sticks**
+(stays until another icon is hovered) while that icon keeps a **persistent "current"** accent
+marker (exactly one at a time); click an icon → smooth-scrolls to its detail card.
+Full schema (sample types text/image/images/videos), the interaction contract, and the
+目的→フロー→その他 information order are documented in **`DESIGN.md` → "Flow / pipeline chart
+(standard pattern)"**. `examples/example_state.json` is a runnable generic demo of all four keys.
 
 ## Run
 ```bash

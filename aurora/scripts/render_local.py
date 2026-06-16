@@ -16,6 +16,7 @@ STATE resolution (shared with notion_sync.py):
 Usage:
   python3 render_local.py [--state STATE.json] [--out dashboard_local.html] [--serve [PORT]] [--no-cdn]
 """
+import base64
 import html as _html
 import json
 import os
@@ -133,18 +134,191 @@ def parse_pipeline(src):
     return out
 
 
-def build_pipeline(nodes, clickable):
+def build_pipeline(nodes, flow_notes=None):
+    """Top pipeline strip. Each node:
+      hover/focus over the node -> reveal the phase description IN the #flowDetail
+                                   panel below the strip (reuses window.nodeClick's
+                                   FLOW_NOTES fill: label + text), mark the node
+                                   .is-current (persistent accent indicator on the
+                                   icon, exactly one current at a time) and give it a
+                                   transient .is-hot lift. The panel is STICKY: on
+                                   mouse-leave/blur it does NOT revert -- it keeps the
+                                   last-hovered node's content (and that node stays
+                                   .is-current) until a DIFFERENT node is hovered.
+                                   (No floating #emaki-tip for the strip.)
+      click/Enter on the node   -> smooth-scroll to that phase's detail card
+                                   (anchor emaki-phase-{id}, owned by build_flow_cards)
+
+    flow_notes: dict {node_id -> description text}. The node ids here are the
+    mermaid ids (P1..P9), which match _phase_anchor('P1',_) == 'emaki-phase-P1',
+    so the strip and the detail set point at the same targets. The node id is also
+    carried in data-flow-id so the hover handler can look it up in FLOW_NOTES and
+    fill the panel via window.nodeClick.
+    """
+    flow_notes = flow_notes or {}
     chips = []
     for nd in nodes:
-        click = f' onclick="nodeClick(\'{nd["id"]}\')"' if clickable else ""
+        nid = nd["id"]
+        anchor = _phase_anchor(nid, 0)  # idx unused when step ('P1') is present
+        has_note = bool(flow_notes.get(nid, ""))
+        # The node carries: click-to-scroll target, a11y label, and (if it has a
+        # description) data-flow-id so the hover handler fills the #flowDetail panel.
+        flow_id_attr = f' data-flow-id="{esc(nid)}"' if has_note else ""
+        node_attrs = (f' role="button" tabindex="0"'
+                      f' data-phase-target="{esc(anchor)}"'
+                      f'{flow_id_attr}'
+                      f' aria-label="{esc(nd["name"])} — 詳細へ移動"')
         chips.append(
-            f'<div class="pl-node {esc(nd["state"])}"{click}>'
+            f'<div class="pl-node {esc(nd["state"])}"{node_attrs}>'
             f'<div class="pl-ic">{esc(nd["icon"])}</div>'
             f'<div class="pl-nm">{esc(nd["name"])}</div></div>')
     return '<div class="pl">' + "".join(chips) + '</div>'
 
 
-def render(state, use_cdn=True):
+def _phase_anchor(step, idx):
+    """Stable, URL-safe anchor id for a phase. Keyed by `step` (e.g. 'P1') when
+    present so the overview set and the detail set point at the same target;
+    falls back to positional index otherwise."""
+    key = re.sub(r"[^0-9A-Za-z]+", "", str(step)) if step else ""
+    if not key:
+        key = str(idx + 1)
+    return "emaki-phase-" + key
+
+
+def build_flow_cards(cards, layout, base_dir, nav=True, is_detail=False,
+                     flow_anchor="emaki-flow"):
+    """Build flow summary cards (standard component). layout='vertical'|'horizontal'.
+
+    nav        — make each phase icon click-to-scroll to that phase's detail card.
+    is_detail  — this set owns the canonical phase anchors (id=emaki-phase-*) and
+                 gets a "back to flowchart" button per card. The overview set
+                 (is_detail=False) only links *into* these anchors.
+    flow_anchor — id of the flow/flowchart section the back button scrolls to.
+    """
+    if base_dir is None:
+        base_dir = ""
+    parts = []
+    for idx, card in enumerate(cards):
+        state_cls = esc(card.get("state", "done"))
+        step = card.get("step", "")
+        icon = card.get("icon", "")
+        title = card.get("title", "")
+        roles = card.get("roles", [])
+        desc = card.get("desc", "")
+        sample = card.get("sample")
+        anchor = _phase_anchor(step, idx)
+
+        head_parts = []
+        if step:
+            head_parts.append(f'<span class="fc-step">{esc(step)}</span>')
+        if icon:
+            # The icon does two things, both non-modal:
+            #   hover/focus -> reveal a description tooltip (JS floating, body-level)
+            #   click/Enter -> smooth-scroll to this phase's detail card (JS)
+            # Works in both vertical & horizontal layouts.
+            #
+            # IMPORTANT: the hover description is NOT a CSS :hover child span anymore.
+            # That approach failed twice in real browsers (clipping / stacking-context /
+            # inline-span positioning). The description now lives in a data-tip attribute
+            # and is rendered by a single position:fixed body-level tooltip (#emaki-tip)
+            # driven by JS — immune to any ancestor overflow/stacking context.
+            ic_attrs = 'class="fc-ic" tabindex="0"'
+            if nav:
+                ic_attrs += (f' role="button" data-phase-target="{esc(anchor)}"'
+                             f' aria-label="{esc(title)} — 詳細へ移動"')
+            else:
+                ic_attrs += f' aria-label="{esc(title)}"'
+            if desc:
+                # data-tip is the single source of truth for the JS hover tooltip.
+                # We strip the **bold** markers (plain text) so it renders cleanly as
+                # textContent; esc() makes it attribute-safe.
+                tip_txt = re.sub(r"\*\*(.+?)\*\*", r"\1", str(desc)).replace("\n", " ")
+                ic_attrs += f' data-tip="{esc(tip_txt)}"'
+            head_parts.append(f'<span {ic_attrs}>{esc(icon)}</span>')
+        head_parts.append(f'<span class="fc-title">{esc(title)}</span>')
+
+        roles_html = ""
+        if roles:
+            tags = "".join(f'<span class="fc-tag">{esc(r)}</span>' for r in roles)
+            roles_html = f'<div class="fc-roles">{tags}</div>'
+
+        desc_html = f'<div class="fc-desc">{md(desc)}</div>' if desc else ""
+
+        sample_html = ""
+        if sample:
+            stype = sample.get("type", "text")
+            label = sample.get("label", "")
+            lab_html = f'<div class="fc-sample-lab">{esc(label)}</div>' if label else ""
+            if stype == "text":
+                body = sample.get("body", "")
+                sample_html = f'{lab_html}<blockquote class="fc-sample-text">{md(body)}</blockquote>'
+            elif stype == "image":
+                alt = esc(sample.get("alt", label))
+                if "src" in sample:
+                    sample_html = f'{lab_html}<img class="fc-sample-img" src="{esc(sample["src"])}" alt="{alt}">'
+                elif "path" in sample:
+                    img_path = os.path.join(base_dir, sample["path"]) if base_dir else sample["path"]
+                    if os.path.exists(img_path):
+                        ext = os.path.splitext(img_path)[1].lower()
+                        mime = "image/jpeg" if ext in (".jpg", ".jpeg") else "image/png"
+                        with open(img_path, "rb") as fh:
+                            b64 = base64.b64encode(fh.read()).decode()
+                        sample_html = (f'{lab_html}<img class="fc-sample-img" '
+                                       f'src="data:{mime};base64,{b64}" alt="{alt}">')
+                    else:
+                        sample_html = f'{lab_html}<figcaption>(画像未検出: {esc(sample["path"])})</figcaption>'
+            elif stype == "images":
+                paths = sample.get("paths", [])
+                imgs = []
+                for p in paths:
+                    img_path = os.path.join(base_dir, p) if base_dir else p
+                    if os.path.exists(img_path):
+                        ext = os.path.splitext(img_path)[1].lower()
+                        mime = "image/jpeg" if ext in (".jpg", ".jpeg") else "image/png"
+                        with open(img_path, "rb") as fh:
+                            b64 = base64.b64encode(fh.read()).decode()
+                        imgs.append(f'<img src="data:{mime};base64,{b64}" alt="{esc(p)}">')
+                if imgs:
+                    sample_html = f'{lab_html}<div class="fc-img-grid">{"".join(imgs)}</div>'
+            elif stype == "videos":
+                paths = sample.get("paths", [])
+                # per-video posters (parallel to paths); fall back to single shared poster
+                posters = sample.get("posters", [])
+                poster = sample.get("poster", "")
+                vids = []
+                for i, p in enumerate(paths):
+                    ps = posters[i] if i < len(posters) else poster
+                    poster_attr = f' poster="{esc(ps)}"' if ps else ""
+                    vids.append(f'<video src="{esc(p)}" controls preload="none"{poster_attr}></video>')
+                if vids:
+                    sample_html = f'{lab_html}<div class="fc-vid-grid">{"".join(vids)}</div>'
+
+        sample_wrap = f'<div class="fc-sample">{sample_html}</div>' if sample_html else ""
+
+        # The detail set owns the scroll-target id and the back-to-flowchart button.
+        card_id = f' id="{esc(anchor)}"' if is_detail else ""
+        back_btn = ""
+        extra_cls = ""
+        if is_detail and nav:
+            extra_cls = " has-back"
+            back_btn = (f'<button type="button" class="fc-back" '
+                        f'data-flow-target="{esc(flow_anchor)}" '
+                        f'aria-label="フローチャートへ戻る">'
+                        f'<span aria-hidden="true">↑</span> フローチャートへ戻る</button>')
+
+        parts.append(
+            f'<div class="fc-card {state_cls}{extra_cls}"{card_id}>'
+            f'{back_btn}'
+            f'<div class="fc-head">{"".join(head_parts)}</div>'
+            f'{roles_html}{desc_html}{sample_wrap}'
+            f'</div>'
+        )
+
+    cls = "horizontal" if layout == "horizontal" else "vertical"
+    return f'<div class="flow-cards {cls}">{"".join(parts)}</div>'
+
+
+def render(state, use_cdn=True, base_dir=None):
     banner_text, banner_color = state["title_banner"]
     ov_label, ov_text, ov_color = state["overall"]
     pct = int(state.get("progress_pct", 0))
@@ -180,7 +354,7 @@ def render(state, use_cdn=True):
                        '<span><i class="lg" style="background:var(--wip)"></i>in progress</span>'
                        '<span><i class="lg" style="background:var(--wait)"></i>waiting</span></div>')
         if pipeline:
-            flow = build_pipeline(pipeline, clickable=bool(note_map))
+            flow = build_pipeline(pipeline, flow_notes=notes)
         elif use_cdn:
             use_mermaid = True
             clicks = [f'click {nid} nodeClick "{re.sub(chr(92)+"s+", " ", str(t))[:48].replace(chr(34), chr(39))}"'
@@ -329,9 +503,23 @@ def render(state, use_cdn=True):
 
     if flow:
         detail = ('<div class="flowdetail" id="flowDetail"><span class="fd-hint">'
-                  '👆 ノードをクリックすると、ここに説明が表示されます</span></div>') if note_map else ""
-        A(f'<div class="h"><i></i>{esc(state.get("flow_heading","Project flow"))}</div>'
+                  '👆 ノードにカーソルを合わせると、ここに説明が表示されます</span></div>') if note_map else ""
+        A(f'<div class="h" id="emaki-flow"><i></i>{esc(state.get("flow_heading","Project flow"))}</div>'
           f'<div class="flowbox">{flow}</div>{flow_legend}{detail}')
+
+    # The first flow_cards set rendered is the canonical DETAIL set: it owns the
+    # per-phase scroll-target ids and the back-to-flowchart buttons. A second set
+    # (overview) only links into those anchors.
+    detail_set_used = False
+    flow_anchor = "emaki-flow" if flow else "top"
+    if state.get("flow_cards"):
+        A(f'<div class="h"><i></i>{esc(state.get("flow_cards_heading","Pipeline"))}</div>'
+          f'{build_flow_cards(state["flow_cards"], state.get("flow_cards_layout","vertical"), base_dir, nav=True, is_detail=True, flow_anchor=flow_anchor)}')
+        detail_set_used = True
+
+    if state.get("flow_cards2"):
+        A(f'<div class="h"><i></i>{esc(state.get("flow_cards2_heading","Flow Overview"))}</div>'
+          f'{build_flow_cards(state["flow_cards2"], state.get("flow_cards2_layout","horizontal"), base_dir, nav=True, is_detail=not detail_set_used, flow_anchor=flow_anchor)}')
 
     A(f'''<div class="cols">
     <div><div class="h"><i></i>{esc(state.get("todos_heading","Work list"))}</div>
@@ -354,14 +542,140 @@ def render(state, use_cdn=True):
 
     tail = ""
     if note_map:                       # inline detail panel (works for pipeline AND mermaid)
+        # The #flowDetail panel is filled by FLOW_NOTES[id] -> {label,text}.
+        # window.nodeClick(id) fills it (used by mermaid click + as the shared fill
+        # for the top-strip hover). fillFlow is the hover fill helper: on hover
+        # (mouseover/focus) over a strip node [data-flow-id] we fillFlow(id). The panel
+        # is STICKY -- it is NOT cleared on leave; it keeps the last-hovered node's
+        # content until a DIFFERENT node is hovered. clearFlow (placeholder restore) is
+        # retained for completeness / mermaid use but is no longer wired to mouseout.
+        # The placeholder is snapshotted once on load so the initial state is correct.
         tail += ('<script>'
                  f'const FLOW_NOTES={json.dumps(note_map, ensure_ascii=False)};'
-                 'window.nodeClick=function(id){var n=FLOW_NOTES[id];if(!n)return;'
+                 'var _fdEl=document.getElementById("flowDetail");'
+                 'var _fdPlaceholder=_fdEl?_fdEl.innerHTML:"";'
+                 'function fillFlow(id){var n=FLOW_NOTES[id];if(!n)return;'
                  'var el=document.getElementById("flowDetail");if(!el)return;'
                  'el.classList.add("active");el.innerHTML="";'
                  'var h=document.createElement("h5");h.textContent=n.label||id;'
                  'var p=document.createElement("p");p.textContent=n.text||"";'
-                 'el.appendChild(h);el.appendChild(p);};</script>')
+                 'el.appendChild(h);el.appendChild(p);}'
+                 'function clearFlow(){var el=document.getElementById("flowDetail");'
+                 'if(!el)return;el.classList.remove("active");el.innerHTML=_fdPlaceholder;}'
+                 'window.nodeClick=fillFlow;</script>')
+    if state.get("flow_cards") or state.get("flow_cards2") or note_map:
+        # Generic flow navigation (event-delegated, so it covers every card AND the
+        # top pipeline strip without per-element handlers):
+        #   click/Enter on [data-phase-target] (detail-card .fc-ic OR top-strip
+        #     .pl-node) -> smooth-scroll to the matching phase detail
+        #   back button -> smooth-scroll to the flow section
+        #   hover/focus on [data-tip] (detail-card .fc-ic) -> reveal the description
+        #     via the single body-level #emaki-tip tooltip
+        #   hover/focus on [data-flow-id] (top-strip .pl-node) -> fill the #flowDetail
+        #     panel with that phase's description + mark the node .is-current
+        #     (persistent accent indicator, exactly one at a time) + transient .is-hot
+        #     lift; leave/blur drops only .is-hot -- the panel + .is-current PERSIST
+        #     (sticky) until a different node is hovered
+        # NOTE: this is JS emitted as a Python string. Do NOT put bare // comments here
+        # (Python would read // as floor-division). Keep any notes inside Python # lines.
+        tail += (
+            '<script>(function(){'
+            'function go(id){if(!id)return;'
+            'var t=document.getElementById(id);'
+            'if(t){t.scrollIntoView({behavior:"smooth",block:"start"});'
+            'if(t.classList){t.classList.remove("fc-flash");void t.offsetWidth;t.classList.add("fc-flash");}}}'
+            # CLICK: any [data-phase-target] (card icon OR top-strip node) -> scroll to
+            # phase detail; back button -> scroll to flow.
+            'document.addEventListener("click",function(e){'
+            'var ic=e.target.closest&&e.target.closest("[data-phase-target]");'
+            'if(ic){go(ic.getAttribute("data-phase-target"));return;}'
+            'var bk=e.target.closest&&e.target.closest(".fc-back[data-flow-target]");'
+            'if(bk){go(bk.getAttribute("data-flow-target"));}'
+            '});'
+            'document.addEventListener("keydown",function(e){'
+            'if(e.key!=="Enter"&&e.key!==" ")return;'
+            'var ic=e.target.closest&&e.target.closest("[data-phase-target]");'
+            'if(ic){e.preventDefault();go(ic.getAttribute("data-phase-target"));}'
+            '});'
+            # PANEL HOVER (top-strip nodes) -- STICKY + PERSISTENT CURRENT MARKER:
+            # hover/focus a .pl-node[data-flow-id] -> fill #flowDetail with that phase
+            # and make THIS node the "current" one: add the persistent .is-current
+            # marker (border + ring/glow) to it AND its .pl-ic, after removing it from
+            # every other node so exactly one is current at a time. The .is-hot class
+            # is the transient lift (kept while the cursor is actually on the node).
+            # On leave/blur we ONLY drop the transient .is-hot -- the panel and the
+            # .is-current marker PERSIST (sticky), so the description and the icon
+            # indicator stay until a DIFFERENT node is hovered. typeof guards keep this
+            # inert if note_map produced no FLOW_NOTES helpers.
+            'function flowSetCurrent(nd){'
+            'var prev=document.querySelectorAll(".pl-node.is-current,.pl-ic.is-current");'
+            'for(var i=0;i<prev.length;i++){if(prev[i]!==nd)prev[i].classList.remove("is-current");}'
+            'nd.classList.add("is-current");'
+            'var ic=nd.querySelector(".pl-ic");if(ic)ic.classList.add("is-current");}'
+            'function flowEnter(nd){var id=nd.getAttribute("data-flow-id");if(!id)return;'
+            'if(typeof fillFlow==="function")fillFlow(id);'
+            'flowSetCurrent(nd);'
+            'var ic=nd.querySelector(".pl-ic");if(ic)ic.classList.add("is-hot");}'
+            'function flowLeave(nd){var ic=nd.querySelector(".pl-ic");'
+            'if(ic)ic.classList.remove("is-hot");}'
+            'document.addEventListener("mouseover",function(e){'
+            'var nd=e.target.closest&&e.target.closest(".pl-node[data-flow-id]");'
+            'if(nd&&!nd.classList.contains("is-current")){flowEnter(nd);}'
+            '});'
+            'document.addEventListener("mouseout",function(e){'
+            'var nd=e.target.closest&&e.target.closest(".pl-node[data-flow-id]");'
+            'if(!nd)return;var to=e.relatedTarget;'
+            'if(to&&nd.contains(to))return;'
+            'flowLeave(nd);'
+            '});'
+            'document.addEventListener("focusin",function(e){'
+            'var nd=e.target.closest&&e.target.closest(".pl-node[data-flow-id]");'
+            'if(nd){flowEnter(nd);}'
+            '});'
+            'document.addEventListener("focusout",function(e){'
+            'var nd=e.target.closest&&e.target.closest(".pl-node[data-flow-id]");'
+            'if(nd)flowLeave(nd);'
+            '});'
+            # HOVER tooltip: a single body-level position:fixed element (#emaki-tip),
+            # immune to any card overflow / backdrop-filter stacking context.
+            'var tip=document.getElementById("emaki-tip");var cur=null;'
+            'function place(ic){'
+            'var r=ic.getBoundingClientRect();'
+            'tip.classList.add("show");'
+            'var tw=tip.offsetWidth,th=tip.offsetHeight;'
+            'var cx=r.left+r.width/2;'
+            'var left=cx-tw/2;'
+            'var top=r.top-th-10;'
+            'if(top<8){top=r.bottom+10;}'
+            'var max=window.innerWidth-tw-8;'
+            'if(left<8)left=8;if(left>max)left=max;'
+            'tip.style.left=left+"px";tip.style.top=top+"px";'
+            '}'
+            'function showTip(ic){var d=ic.getAttribute("data-tip");if(!d)return;'
+            'cur=ic;tip.textContent=d;ic.classList.add("is-hot");place(ic);}'
+            'function hideTip(){tip.classList.remove("show");'
+            'if(cur){cur.classList.remove("is-hot");cur=null;}}'
+            'document.addEventListener("mouseover",function(e){'
+            'var ic=e.target.closest&&e.target.closest("[data-tip]");'
+            'if(ic&&ic!==cur){if(cur)cur.classList.remove("is-hot");showTip(ic);}'
+            '});'
+            'document.addEventListener("mouseout",function(e){'
+            'var ic=e.target.closest&&e.target.closest("[data-tip]");'
+            'if(!ic)return;'
+            'var to=e.relatedTarget;'
+            'if(to&&ic.contains(to))return;'
+            'hideTip();'
+            '});'
+            'document.addEventListener("focusin",function(e){'
+            'var ic=e.target.closest&&e.target.closest("[data-tip]");'
+            'if(ic)showTip(ic);'
+            '});'
+            'document.addEventListener("focusout",function(e){'
+            'var ic=e.target.closest&&e.target.closest("[data-tip]");'
+            'if(ic)hideTip();'
+            '});'
+            'window.addEventListener("scroll",function(){if(cur)place(cur);},true);'
+            '})();</script>')
     if use_mermaid:
         tail += ('<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>'
                  '<script>mermaid.initialize({startOnLoad:true,securityLevel:"loose",theme:"dark",'
@@ -405,7 +719,7 @@ PAGE = """<!doctype html>
     background-image:radial-gradient(rgba(255,255,255,.05) 1px, transparent 1px);background-size:34px 34px;
     -webkit-mask-image:radial-gradient(1200px 760px at 50% 0%, #000, transparent 78%);
     mask-image:radial-gradient(1200px 760px at 50% 0%, #000, transparent 78%)}}
-  .card,.panel,.flowbox,.ms,.flowdetail,.det{{background:var(--card);border:1px solid var(--line);
+  .card,.panel,.flowbox,.ms,.flowdetail,.det,.fc-card{{background:var(--card);border:1px solid var(--line);
     box-shadow:var(--elev);-webkit-backdrop-filter:var(--blur);backdrop-filter:var(--blur)}}
   .stat,.ms{{transition:transform .16s ease, box-shadow .16s ease}}
   .stat:hover,.ms:hover{{transform:translateY(-3px);box-shadow:0 1px 0 rgba(255,255,255,.1) inset,0 28px 56px -26px rgba(0,0,0,.95)}}
@@ -447,15 +761,63 @@ PAGE = """<!doctype html>
   .pl{{display:flex;align-items:flex-start;min-width:560px}}
   .pl-node{{flex:1;position:relative;display:flex;flex-direction:column;align-items:center;text-align:center;cursor:pointer;padding:0 4px;transition:transform .15s ease}}
   .pl-node:hover{{transform:translateY(-3px)}}
-  .pl-ic{{width:54px;height:54px;border-radius:16px;display:grid;place-items:center;font-size:23px;border:1.5px solid;margin-bottom:11px;position:relative;z-index:1;background:var(--card)}}
-  .pl-nm{{font-size:12.5px;color:var(--ink2);font-weight:600;line-height:1.3;max-width:120px}}
+  .pl-node[role=button]:focus-visible{{outline:none}}
+  .pl-node[role=button]:focus-visible .pl-ic{{box-shadow:0 0 0 2px var(--accent)}}
+  /* Default node icons: each state keeps its meaning via a tinted BORDER + a small,
+     restrained accent-colored DOT (top-right), but the icon glyph stays neutral ink
+     and the fill stays the shared dark-glass --card. This removes the old clashing
+     per-state colored glyphs/glows so the resting strip reads as one clean palette.
+     The ONE hover highlight (.is-hot) then uses the single --accent consistently, so
+     emphasis feels like a natural lift, not a different color world. All state-driven
+     properties transition smoothly (no jarring jump). */
+  .pl-ic{{width:54px;height:54px;border-radius:16px;display:grid;place-items:center;font-size:23px;border:1.5px solid var(--line2);color:var(--ink);margin-bottom:11px;position:relative;z-index:1;background:var(--card);
+    transition:border-color .22s ease, box-shadow .22s ease, transform .22s ease, filter .22s ease}}
+  .pl-ic::after{{content:"";position:absolute;top:-3px;right:-3px;width:9px;height:9px;border-radius:50%;
+    background:var(--line2);border:2px solid var(--bg2);transition:background .22s ease}}
+  /* .pl-node.is-hot wrapper bumps specificity (0,2,0) so the single-accent
+     highlight beats every per-state border rule (.pl-node.plan .pl-ic = 0,2,1). */
+  .pl-node .pl-ic.is-hot{{border-color:var(--accent);
+    box-shadow:0 0 0 3px rgba(129,140,248,.18), 0 0 16px -2px var(--glow);
+    filter:brightness(1.12);transform:scale(1.12);z-index:5}}
+  .pl-nm{{font-size:12.5px;color:var(--ink2);font-weight:600;line-height:1.3;max-width:120px;transition:color .22s ease}}
+  .pl-node:hover .pl-nm,.pl-node:focus-within .pl-nm{{color:var(--ink)}}
   .pl-node:not(:last-child)::after{{content:"";position:absolute;top:27px;left:calc(50% + 35px);right:calc(-50% + 35px);height:2px;background:var(--line2);border-radius:2px;z-index:0}}
-  .pl-node.done .pl-ic{{border-color:var(--done);color:#7ff0c4;box-shadow:0 0 18px -4px rgba(52,211,153,.55)}}
-  .pl-node.done:not(:last-child)::after{{background:linear-gradient(90deg,var(--done),var(--done))}}
-  .pl-node.wip .pl-ic{{border-color:var(--wip);color:#fcd770;box-shadow:0 0 0 5px rgba(251,191,36,.12),0 0 22px -2px rgba(251,191,36,.6)}}
-  .pl-node.wip:not(:last-child)::after{{background:linear-gradient(90deg,var(--wip),var(--wait))}}
-  .pl-node.wait .pl-ic{{border-color:var(--wait);color:#ffa9b6;border-style:dashed;opacity:.92}}
+  /* state = colored dot + tinted border only (muted), glyph stays neutral */
+  .pl-node.done .pl-ic{{border-color:rgba(52,211,153,.45)}}
+  .pl-node.done .pl-ic::after{{background:var(--done)}}
+  .pl-node.done:not(:last-child)::after{{background:linear-gradient(90deg,var(--done),var(--done));opacity:.6}}
+  .pl-node.wip .pl-ic{{border-color:rgba(251,191,36,.5)}}
+  .pl-node.wip .pl-ic::after{{background:var(--wip)}}
+  .pl-node.wip:not(:last-child)::after{{background:linear-gradient(90deg,var(--wip),var(--wait));opacity:.55}}
+  .pl-node.wait .pl-ic{{border-color:rgba(251,113,133,.5);border-style:dashed;opacity:.94}}
+  .pl-node.wait .pl-ic::after{{background:var(--wait)}}
   .pl-node.wait .pl-nm{{color:var(--ink3)}}
+  .pl-node.new .pl-ic{{border-color:rgba(129,140,248,.5)}}
+  .pl-node.new .pl-ic::after{{background:var(--accent2)}}
+  /* this STATE set also uses plan/crit (planned / critical phases). plan reads as a
+     calm neutral-blue dot; crit as the warning --wait tone — both muted to match. */
+  .pl-node.plan .pl-ic{{border-color:rgba(129,140,248,.4)}}
+  .pl-node.plan .pl-ic::after{{background:var(--accent)}}
+  .pl-node.crit .pl-ic{{border-color:rgba(251,113,133,.5)}}
+  .pl-node.crit .pl-ic::after{{background:var(--wait)}}
+  /* hover highlight wins over EVERY per-state dot+border color (placed AFTER the
+     state rules so it wins source-order ties) -> resting strip = muted per-state
+     palette, hover = one consistent --accent emphasis. */
+  .pl-node .pl-ic.is-hot{{border-color:var(--accent)}}
+  .pl-node .pl-ic.is-hot::after{{background:var(--accent)}}
+  /* PERSISTENT "current" marker: the node whose description is shown in #flowDetail.
+     Unlike .is-hot (transient, only while the cursor is on the node), .is-current
+     STAYS after mouse-leave -- so the user can always tell which icon the panel text
+     belongs to. Accent border + ring/glow on the icon, accent name text, and an
+     accent connector dot, all distinct enough to spot at a glance. Placed AFTER the
+     state rules AND after .is-hot so it always wins source-order ties. Smooth
+     transition is inherited from the base .pl-ic transition. */
+  .pl-node.is-current .pl-ic,.pl-ic.is-current{{border-color:var(--accent);border-style:solid;
+    box-shadow:0 0 0 3px rgba(129,140,248,.30), 0 0 18px -1px var(--glow);
+    background:rgba(129,140,248,.10);z-index:4}}
+  .pl-node.is-current .pl-ic::after,.pl-ic.is-current::after{{background:var(--accent);
+    box-shadow:0 0 8px var(--accent)}}
+  .pl-node.is-current .pl-nm{{color:var(--accent);font-weight:700}}
   .flowbox .clickable,.flowbox .node{{cursor:pointer}}
   .flowbox .clickable:hover{{filter:brightness(1.16)}}
   .flowdetail{{margin-top:16px;border-left:3px solid var(--accent);border-radius:14px;padding:16px 20px;min-height:56px;transition:.15s}}
@@ -531,8 +893,83 @@ PAGE = """<!doctype html>
   .mt-fl{{position:absolute;left:0;top:0;height:100%;border-radius:99px;background:linear-gradient(90deg,var(--accent),var(--accent2))}}
   .mt-knob{{position:absolute;top:50%;width:16px;height:16px;border-radius:50%;background:#fff;border:3px solid var(--accent);transform:translate(-50%,-50%);box-shadow:0 0 12px var(--glow)}}
   .mt-mm{{display:flex;justify-content:space-between;margin-top:8px;font-size:11px;color:var(--ink3);font-family:var(--mono)}}
+  /* flow summary cards */
+  /* NOTE: overflow is VISIBLE on purpose. The vertical timeline dot (::before at
+     left:-32px) needs to escape the card box. Image samples carry their own
+     border-radius, so dropping the clip costs nothing visually. (The hover
+     description is now a body-level #emaki-tip — not clipped by anything anyway.) */
+  .fc-card{{border-radius:var(--r);padding:20px 22px;margin-bottom:12px;position:relative;overflow:visible;border-left:4px solid var(--line2)}}
+  .fc-card.done{{border-left-color:var(--done)}}
+  .fc-card.wip{{border-left-color:var(--wip)}}
+  .fc-card.wait{{border-left-color:var(--wait)}}
+  .fc-head{{display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap}}
+  .fc-step{{font-family:var(--mono);font-size:12px;color:var(--accent);font-weight:700;letter-spacing:.04em;background:rgba(129,140,248,.1);padding:3px 8px;border-radius:6px;border:1px solid rgba(129,140,248,.2)}}
+  .fc-ic{{font-size:20px;line-height:1}}
+  .fc-title{{font-size:16px;font-weight:700;color:var(--ink)}}
+  .fc-roles{{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}}
+  .fc-tag{{font-size:11px;font-weight:700;color:var(--ink3);background:rgba(255,255,255,.05);border:1px solid var(--line2);padding:2px 8px;border-radius:5px;letter-spacing:.03em}}
+  .fc-desc{{font-size:14px;color:var(--ink2);line-height:1.6;margin-bottom:8px}}
+  .fc-sample{{margin-top:10px;border-top:1px solid var(--line);padding-top:10px}}
+  .fc-sample-lab{{font-size:11px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px}}
+  .fc-sample-text{{border-left:2px solid var(--accent);margin:0;padding:10px 14px;font-size:13px;color:var(--ink2);line-height:1.7;border-radius:0 8px 8px 0;background:rgba(129,140,248,.06)}}
+  .fc-sample-img{{max-width:100%;border-radius:10px;display:block}}
+  .fc-img-grid{{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:4px}}
+  .fc-img-grid img{{width:100%;border-radius:6px;display:block;object-fit:cover}}
+  .fc-vid-grid{{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:4px}}
+  .fc-vid-grid video{{width:100%;border-radius:6px;display:block;background:#000}}
+  .flow-cards.vertical{{border-left:2px solid var(--line2);padding-left:24px;position:relative}}
+  .flow-cards.vertical .fc-card{{position:relative}}
+  .flow-cards.vertical .fc-card::before{{content:"";position:absolute;left:-32px;top:20px;width:10px;height:10px;border-radius:50%;background:var(--line2);border:2px solid var(--bg2)}}
+  .flow-cards.vertical .fc-card.done::before{{background:var(--done)}}
+  .flow-cards.vertical .fc-card.wip::before{{background:var(--wip)}}
+  .flow-cards.vertical .fc-card.wait::before{{background:var(--wait)}}
+  .flow-cards.horizontal{{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px}}
+  .flow-cards.horizontal .fc-card{{margin-bottom:0}}
+  .flow-cards.horizontal .fc-sample-img{{max-height:120px;object-fit:cover;width:100%}}
+  .flow-cards.horizontal .fc-sample-text{{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}}
+  .fc-card{{transition:border-left-color .2s ease,box-shadow .2s ease;cursor:default}}
+  .fc-card:hover{{border-left-color:var(--accent);box-shadow:0 0 12px var(--glow)}}
+  .fc-card .fc-ic{{transition:filter .2s ease,transform .2s ease}}
+  /* per-icon hover/focus highlight (glow + scale). Highlight is applied ONLY to the
+     icon being hovered/focused, never permanently. The description itself is shown
+     by the body-level floating tooltip (#emaki-tip) below — NOT a child span — so it
+     is immune to the card's overflow/backdrop-filter stacking context. The .is-hot
+     class is also toggled by JS on mouseenter/leave for extra reliability. */
+  .fc-ic{{position:relative;border-radius:10px;outline:none}}
+  .fc-ic[data-phase-target]{{cursor:pointer}}
+  .fc-ic[data-phase-target]:focus-visible{{box-shadow:0 0 0 2px var(--accent)}}
+  .fc-ic:hover,.fc-ic:focus-visible,.fc-ic.is-hot{{filter:brightness(1.5) drop-shadow(0 0 9px var(--accent));transform:scale(1.2);z-index:5}}
+  /* Robust floating tooltip: a SINGLE element appended to <body>, position:fixed at a
+     very high z-index. Because it is a direct child of <body> and fixed-positioned, it
+     is NOT clipped by any ancestor overflow and NOT trapped in any card's stacking
+     context (backdrop-filter). JS positions it from the icon's getBoundingClientRect. */
+  #emaki-tip{{position:fixed;z-index:9999;pointer-events:none;max-width:300px;
+    opacity:0;visibility:hidden;transition:opacity .12s ease;
+    background:#11141c;border:1px solid var(--line2);border-radius:12px;
+    padding:12px 14px;font-size:13px;font-weight:500;line-height:1.6;color:var(--ink2);
+    text-align:left;white-space:normal;letter-spacing:0;
+    box-shadow:0 18px 44px -20px rgba(0,0,0,.95),0 0 0 1px rgba(129,140,248,.12)}}
+  #emaki-tip.show{{opacity:1;visibility:visible}}
+  /* back-to-flowchart button: small, right-aligned, dark-glass, non-intrusive */
+  .fc-back{{position:absolute;top:14px;right:14px;z-index:3;display:inline-flex;align-items:center;gap:5px;
+    font-family:var(--font);font-size:11.5px;font-weight:600;letter-spacing:.02em;color:var(--ink3);
+    background:rgba(255,255,255,.04);border:1px solid var(--line2);border-radius:999px;padding:5px 12px;
+    cursor:pointer;-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);
+    transition:color .16s ease,border-color .16s ease,background .16s ease,box-shadow .16s ease}}
+  .fc-back:hover,.fc-back:focus-visible{{color:var(--ink);border-color:rgba(129,140,248,.5);
+    background:rgba(129,140,248,.12);box-shadow:0 0 12px -2px var(--glow);outline:none}}
+  .fc-card.has-back .fc-head{{padding-right:120px}}
+  /* brief highlight pulse when a card is scrolled to (click navigation feedback) */
+  @keyframes fcFlash{{0%{{box-shadow:0 0 0 2px var(--accent),0 0 24px -2px var(--glow)}}
+    100%{{box-shadow:none}}}}
+  .fc-flash{{animation:fcFlash 1.2s ease-out 1}}
+  @media(prefers-reduced-motion:reduce){{.fc-flash{{animation:none}}}}
+  @media(max-width:760px){{.flow-cards.horizontal{{grid-template-columns:1fr}}#emaki-tip{{max-width:min(280px,86vw)}}
+    .fc-back{{position:static;margin:0 0 10px auto;display:flex;width:max-content}}
+    .fc-card.has-back .fc-head{{padding-right:0}}}}
 </style></head>
 <body>
+<div id="emaki-tip" role="tooltip"></div>
 {body}
 {mermaid}
 </body></html>
@@ -544,7 +981,12 @@ def main():
     state = ns.load_state(argv)
     out = argv[argv.index("--out") + 1] if "--out" in argv else os.path.join(HERE, "dashboard_local.html")
     use_cdn = "--no-cdn" not in argv
-    doc = render(state, use_cdn=use_cdn)
+    if "--state" in argv:
+        state_path = argv[argv.index("--state") + 1]
+        base_dir = os.path.dirname(os.path.abspath(state_path))
+    else:
+        base_dir = os.path.abspath(os.path.join(HERE, "..", "examples"))
+    doc = render(state, use_cdn=use_cdn, base_dir=base_dir)
     with open(out, "w", encoding="utf-8") as f:
         f.write(doc)
     print(f"✅ local dashboard -> {out}  ({len(doc)//1024} KB)")
