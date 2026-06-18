@@ -74,6 +74,54 @@ an **inline detail panel under the flow** (`#flowDetail`) — NOT a modal. Modal
 the screen and force a close action; prefer non-modal inline/drawer/tooltip reveals.
 The LLM only writes short note text per node; interactivity is the renderer's job.
 
+## Report authoring — outcome & effect first (結果ベース)
+
+A completion or status report rendered in Aurora is read by a **decision-maker**, not by
+the people who built the thing. They are not asking "what steps did you take?" — they are
+asking **"what can we now do, and what is the benefit?"** Author every STATE to answer
+those two questions in the first screenful. A chronological process diary (phase 1 → phase
+2 → phase 3, command history, change-log) buries the answer and is the single most common
+"AI-default" failure for status reports.
+
+Structure the content in this priority order:
+
+1. **結果 = what became possible.** Lead with the capability, from the user/operator's
+   viewpoint: "you can now do X." Not "we completed phases 1–3."
+2. **効果 = the effect / benefit.** Quantify wherever you can — before→after, time / effort
+   / cost reduced, accuracy or throughput gained, error rate dropped, the problem it
+   removes, the operational or business impact.
+3. **過程 = process / history is SUPPORTING and demoted.** Phases, change-log, and command
+   history go *later*, condensed, or in an appendix — never the headline.
+
+### Map the principle onto STATE
+
+So an LLM authoring a STATE follows the order automatically, bind each block to its job:
+
+| STATE key | What it must carry | What it must NOT be |
+|-----------|--------------------|----------------------|
+| `banner` / `overall` | The **outcome headline** (what's now possible) + one line of impact | "we did phases 1–3" |
+| `highlights` / `cards` | The concrete **capabilities gained** ("can now do X") + the single most important effect of each | a task list |
+| `meters` / `bars` / `trend` | **Quantified effects**: before→after numbers (time, cost, accuracy, error rate) + the trend of improvement | raw activity counts |
+| `flow` / `flow_cards` | The **process / how it was built** — placed *after* the outcome & effect sections as supporting detail; omit or condense if the audience only needs results | the top of the page |
+| `issues` | Residual **limitations / next steps** | hidden or omitted |
+| `refs` | **Sources** — plan docs, verification records | decoration |
+
+The information order from the flow section still holds, but the *content* of the目的 zone
+changes: `banner + overall` is the outcome + impact, and the flow (the process) is demoted
+below the outcome/effect blocks rather than competing with them.
+
+### Author self-check (結果ベース checklist)
+
+Before shipping a STATE, confirm:
+
+- **(a)** Does the top of the page state a **capability + its benefit**, not a process step?
+- **(b)** Is **at least one effect quantified** (before→after)?
+- **(c)** Is the **process content below the outcome**, not above it?
+
+If any answer is "no", the report is still a process diary — rewrite the top.
+
+---
+
 ## Flow / pipeline chart (standard pattern)
 
 This is the **canonical way to present a flow / pipeline / process** in Aurora. Any LLM

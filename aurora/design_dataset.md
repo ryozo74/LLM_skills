@@ -35,6 +35,11 @@ tokens/components).
 
 ## 5. 2026 dashboard practice (researched)
 - **Decision-first, not a data dump.** Ask "what decision does this support?" before charts.
+  For a *completion / status report*, this means **outcome & effect first (結果ベース)**: lead
+  with what's now possible + its quantified benefit (before→after); demote process/history
+  below it. The decision-maker asks "what can we do now, and what's the benefit?", not "what
+  steps did you take?". Full pattern + STATE mapping + author checklist: see `DESIGN.md`
+  → "Report authoring — outcome & effect first".
 - **3–5 key metrics read first**, then progressive disclosure (collapsibles / drilldown).
 - **~7–8 elements visible at once** to manage cognitive load. (Aurora's example is a *showcase*
   of all components — real dashboards should pick a subset; consider a "lite" preset.)
