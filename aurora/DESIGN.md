@@ -90,6 +90,24 @@ The LLM only writes short note text per node; interactivity is the renderer's jo
 先頭行 = ヘッダ。任意列数を `<table>` として描画する。3 列以内の節目リストは従来どおり
 `milestones`、N 列の行列は `table` を使い分ける。
 
+### Thumbnails in cells (画像セル)
+
+A cell value may embed an image with markdown `![](url)` — it renders as a **clickable
+thumbnail** (~108×80) that zooms to ~560px on click and back. Plain text in the same cell
+is kept below the image. This makes `table` the standard for **shotlists / cut-tables**
+(行=カット × 列=サムネ・秒数・ナレーション・備考):
+
+```json
+"table": [
+  ["カット", "画像", "秒数", "内容"],
+  ["1", "![](/asset/cut01.jpg)", "0:00~", "タンク全景"]
+]
+```
+
+URLs may be `http(s)://`, a server route (e.g. `/asset/<file>`), or a base64 data URI.
+Multiple images in one cell render side by side. Keep thumbnails small so the table scans
+at a glance; the click-to-zoom handler is self-contained (no extra JS/CSS needed).
+
 ## Report authoring — outcome & effect first (結果ベース)
 
 A completion or status report rendered in Aurora is read by a **decision-maker**, not by

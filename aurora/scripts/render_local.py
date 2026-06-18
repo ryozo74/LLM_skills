@@ -443,9 +443,26 @@ def render(state, use_cdn=True, base_dir=None):
             for r in body
         )
 
-    # ---- table (generic N-column; first row = header)
+    # ---- table (generic N-column; first row = header). Cells may embed images
+    #      via markdown `![](url)` -> rendered as clickable thumbnails (zoom on click).
     trows = state.get("table", [])
     tbl = ""
+
+    def _tcell(c):
+        s = str(c)
+        urls = re.findall(r"!\[[^\]]*\]\(([^)\s]+)\)", s)
+        if not urls:
+            return esc(s)
+        zoom = ("onclick=\"var b=this.dataset.b=='1';this.dataset.b=b?'':'1';"
+                "this.style.maxWidth=b?'108px':'min(82vw,560px)';"
+                "this.style.maxHeight=b?'80px':'none';this.style.cursor=b?'zoom-in':'zoom-out'\"")
+        imgs = "".join(
+            f'<img src="{esc(u)}" loading="lazy" {zoom} '
+            'style="max-width:108px;max-height:80px;border-radius:6px;cursor:zoom-in;'
+            'border:1px solid #243049;display:inline-block;margin:2px">' for u in urls)
+        rest = esc(re.sub(r"!\[[^\]]*\]\([^)\s]+\)", "", s).strip())
+        return imgs + ((f'<div style="margin-top:3px">{rest}</div>') if rest else "")
+
     if trows:
         th = "".join(
             f'<th style="text-align:left;padding:9px 12px;border-bottom:2px solid #2b3a55;'
@@ -455,7 +472,7 @@ def render(state, use_cdn=True, base_dir=None):
         for r in trows[1:]:
             tds = "".join(
                 f'<td style="padding:8px 12px;border-bottom:1px solid #1c2436;font-size:13px;'
-                f'color:#dbe4ee;vertical-align:top">{esc(c)}</td>' for c in r)
+                f'color:#dbe4ee;vertical-align:top">{_tcell(c)}</td>' for c in r)
             trb += f"<tr>{tds}</tr>"
         tbl = ('<table style="width:100%;border-collapse:collapse;margin:6px 0 4px;'
                'background:rgba(14,20,32,.5);border:1px solid #1f2937;border-radius:10px;overflow:hidden">'
