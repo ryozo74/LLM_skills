@@ -74,6 +74,22 @@ an **inline detail panel under the flow** (`#flowDetail`) — NOT a modal. Modal
 the screen and force a close action; prefer non-modal inline/drawer/tooltip reveals.
 The LLM only writes short note text per node; interactivity is the renderer's job.
 
+## Table component (任意列数の比較表)
+
+`milestones` は 3 列固定 (rg/tt/ds) で 4 列目以降は捨てられる。**列数が 3 を超える比較表**
+(例: 行=項目 × 列=複数モデル/候補のスコア行列) には **`table`** キーを使う:
+
+```json
+"table_heading": "プロセス別スコア",
+"table": [
+  ["プロセス", "A", "B", "C"],
+  ["聞く", "★★★", "★★★★", "★★★★"]
+]
+```
+
+先頭行 = ヘッダ。任意列数を `<table>` として描画する。3 列以内の節目リストは従来どおり
+`milestones`、N 列の行列は `table` を使い分ける。
+
 ## Report authoring — outcome & effect first (結果ベース)
 
 A completion or status report rendered in Aurora is read by a **decision-maker**, not by

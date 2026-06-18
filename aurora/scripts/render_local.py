@@ -443,6 +443,24 @@ def render(state, use_cdn=True, base_dir=None):
             for r in body
         )
 
+    # ---- table (generic N-column; first row = header)
+    trows = state.get("table", [])
+    tbl = ""
+    if trows:
+        th = "".join(
+            f'<th style="text-align:left;padding:9px 12px;border-bottom:2px solid #2b3a55;'
+            f'color:#bfe6ff;font-weight:700;font-size:13px;white-space:nowrap">{esc(c)}</th>'
+            for c in trows[0])
+        trb = ""
+        for r in trows[1:]:
+            tds = "".join(
+                f'<td style="padding:8px 12px;border-bottom:1px solid #1c2436;font-size:13px;'
+                f'color:#dbe4ee;vertical-align:top">{esc(c)}</td>' for c in r)
+            trb += f"<tr>{tds}</tr>"
+        tbl = ('<table style="width:100%;border-collapse:collapse;margin:6px 0 4px;'
+               'background:rgba(14,20,32,.5);border:1px solid #1f2937;border-radius:10px;overflow:hidden">'
+               f'<thead><tr>{th}</tr></thead><tbody>{trb}</tbody></table>')
+
     def details(title_txt, items):
         if not items:
             return ""
@@ -527,6 +545,9 @@ def render(state, use_cdn=True, base_dir=None):
     <div><div class="h"><i></i>{esc(state.get("issues_heading","Issues / blockers"))}</div>
       <div class="panel">{issues}</div></div>
   </div>''')
+
+    if tbl:
+        A(f'<div class="h"><i></i>{esc(state.get("table_heading","Table"))}</div>{tbl}')
 
     if ms:
         A(f'<div class="h"><i></i>{esc(state.get("milestones_heading","Milestones"))}</div>'
