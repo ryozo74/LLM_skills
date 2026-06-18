@@ -108,6 +108,24 @@ URLs may be `http(s)://`, a server route (e.g. `/asset/<file>`), or a base64 dat
 Multiple images in one cell render side by side. Keep thumbnails small so the table scans
 at a glance; the click-to-zoom handler is self-contained (no extra JS/CSS needed).
 
+## Mermaid diagram component (汎用の図)
+
+For any diagram that is **not** the curated top-strip pipeline (`flow`) — a flowchart,
+sequence, gantt, mindmap, ER diagram, state diagram, etc. — use the general **`mermaid`**
+key. The value is a raw [mermaid](https://mermaid.js) string; `render_local.py` renders it
+client-side (CDN) and shows a `--no-cdn` raw-source fallback offline.
+
+```json
+"mermaid_heading": "制作フロー",
+"mermaid": "flowchart LR\n  A[実写] --> B[キー作成] --> C[合成]\n  D[CGモデル] --> C"
+```
+
+This is the generalized "generative diagram" path (the Canvas/Artifacts methodology): the
+model picks the right mermaid diagram type for the content and writes the code; the renderer
+draws it. Use `flow`+`flow_notes`+`flow_cards` when you want the **branded interactive
+pipeline** (icon strip + hover panel + detail cards); use `mermaid` for **everything else**.
+For multi-line node labels use `<br/>` (not `\n`).
+
 ## Report authoring — outcome & effect first (結果ベース)
 
 A completion or status report rendered in Aurora is read by a **decision-maker**, not by

@@ -366,6 +366,15 @@ def render(state, use_cdn=True, base_dir=None):
             flow = '<pre class="codeflow">' + esc(state["flow"]) + '</pre>'
             flow_legend = '<p class="hint">(--no-cdn: raw flow source)</p>'
 
+    # ---- mermaid (汎用): 任意の mermaid 図 (flowchart/sequence/gantt/mindmap/erDiagram 等)
+    mermaid_block = ""
+    if state.get("mermaid"):
+        if use_cdn:
+            use_mermaid = True
+            mermaid_block = f'<pre class="mermaid">{esc(state["mermaid"])}</pre>'
+        else:
+            mermaid_block = '<pre class="codeflow">' + esc(state["mermaid"]) + '</pre>'
+
     # ---- todos
     todos = "".join(
         f'<div class="row"><div class="chk{" on" if chk else ""}"></div>'
@@ -562,6 +571,10 @@ def render(state, use_cdn=True, base_dir=None):
     <div><div class="h"><i></i>{esc(state.get("issues_heading","Issues / blockers"))}</div>
       <div class="panel">{issues}</div></div>
   </div>''')
+
+    if mermaid_block:
+        A(f'<div class="h"><i></i>{esc(state.get("mermaid_heading","Diagram"))}</div>'
+          f'<div class="flowbox">{mermaid_block}</div>')
 
     if tbl:
         A(f'<div class="h"><i></i>{esc(state.get("table_heading","Table"))}</div>{tbl}')
