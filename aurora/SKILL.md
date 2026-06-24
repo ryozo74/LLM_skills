@@ -71,3 +71,9 @@ and edit. To re-skin, change only `--accent` in the CSS. Read `DESIGN.md` +
   hero image (auto-detected; Windows Chrome/Edge on WSL for CJK).
 - LLM-free at runtime. A local or hosted LLM is only useful upstream, to author `STATE`.
 - `notion_sync.py --dry-run` is the safe preflight; it never touches Notion.
+
+## Compose multiple pages into one deck
+`scripts/agenda_merge.py` stitches several rendered pages (Status / Brain / Persona ...) into ONE page with a **sticky agenda (TOC)**, **smooth-scroll** anchors, and per-section **"▲ Top"** links — works over `file://`. See DESIGN.md "Agenda merge". Usage:
+```
+python3 scripts/agenda_merge.py --out deck.html "📊 Status=status.html" "🧠 Brain=brain.html"
+```

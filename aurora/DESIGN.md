@@ -356,3 +356,28 @@ Modals are still avoided per the non-modal rule — this is an inline tooltip, n
 `bars`). Reason: flow cards have many optional fields (`step`, `icon`, `roles`, `desc`,
 `sample`). Position-dependent tuples become fragile when fields are optional; named dicts
 stay readable and extendable. This asymmetry is intentional and is documented here.
+
+
+## Agenda merge — 複数ページを1枚の回遊デッキに (`scripts/agenda_merge.py`)
+
+`render_local.py` は 1 STATE → 1 ページ。複数のダッシュ(Status / Brain / Persona ...)を
+**1枚にまとめて回遊**したい時は `agenda_merge.py` で合成する(各ページは自前の STATE/描画を保つ)。
+
+得られるもの:
+- 上部に **sticky なアジェンダ(目次)**。項目クリックで該当セクションへ **スムーズスクロール**(`html{scroll-behavior:smooth}` + `#anchor`)。
+- 各セクション末に **「▲ Top」**。
+- **`file://` でも確実に動く**(ページ内アンカーゆえ・クロスファイルリンク不要)。
+
+使い方:
+```
+python3 scripts/agenda_merge.py --out deck.html \
+    "📊 Status=status.html" "🧠 Brain=brain.html" "🎭 Persona=persona.html"
+# 各引数 = "<目次ラベル>=<htmlファイル>"。--title でページタイトル。
+# 既定で先頭ページの見出しは省略(自前バナーがあるため)。--first-title で付与。
+```
+
+実装上の罠(対策済・破ると壊れる):
+1. 各ページの `<style>` は**マージ後の `<head>` に集約(重複除外)**する。本文に生CSSを漏らさない。
+2. `<body>` の抽出は **必ず `<style>` を除去した後に**行う——CSS コメントに文字列 `<body>`
+   (例:「...direct child of `<body>`...」)が含まれると、body 正規表現がそれに誤マッチして
+   head の CSS を本文へ引き込み、生CSSがテキスト表示される。
